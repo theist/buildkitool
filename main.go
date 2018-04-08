@@ -100,6 +100,27 @@ func listBuilds(printJobs, printFinishedJobs bool) {
 	}
 }
 
+func printBuildsHelp() {
+	fmt.Printf("%v builds\n\n", os.Args[0])
+	fmt.Println(`  Prints information of the current builds started or pending in buildkite. Each
+  build will be printed with the list of jobs associated and their statuses.
+
+  All the pending build will be presented as "scheduled" and if there's any
+  running will be presented as "running" unless there aren't any agents running,
+  then it will be shown as "-stalled-"
+
+  --no-jobs, -nj, no-jobs
+                    Will not show the jobs associated, only the builds
+
+  --only-pending, -p, pending
+                    Will show only pending "scheduled" jobs
+
+  --help, help
+                    This help.
+
+`)
+}
+
 func commandListBuilds() {
 	if len(os.Args) < 3 {
 		listBuilds(true, true)
@@ -107,13 +128,15 @@ func commandListBuilds() {
 	}
 	flag := os.Args[2]
 	switch flag {
-	case "--no-jobs":
+	case "--no-jobs", "no-jobs", "-nj":
 		listBuilds(false, false)
-	case "--only-pending":
+	case "--only-pending", "pending", "-p":
 		listBuilds(true, false)
+	case "--help", "help":
+		printBuildsHelp()
 	default:
 		fmt.Print(color.HiRedString("Unknow Flag: %v\n", flag))
-		printHelp()
+		printBuildsHelp()
 	}
 }
 
