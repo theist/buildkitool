@@ -48,6 +48,9 @@ func printConfig() {
 }
 
 func listBuilds(printJobs, printFinishedJobs bool) {
+	if !checkEnv() {
+		os.Exit(1)
+	}
 	cli := NewAPIClient(os.Getenv("BUILDKITE_API_TOKEN"), os.Getenv("BUILDKITE_ORG"))
 	builds := cli.BuildList()
 	if len(builds) == 0 {
@@ -118,9 +121,6 @@ func main() {
 	godotenv.Load(".env")
 	userConfigFile, _ := homedir.Expand("~/.buildkitool")
 	godotenv.Load(userConfigFile)
-	if !checkEnv() {
-		os.Exit(1)
-	}
 	command := "help"
 	if len(os.Args) > 1 {
 		command = os.Args[1]
