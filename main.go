@@ -35,7 +35,7 @@ func listAgents() {
 	//TODO: list agetns status
 }
 
-func listBuilds() {
+func listBuilds(printJobs, printFinishedJobs bool) {
 	cli := NewAPIClient(os.Getenv("BUILDKITE_API_TOKEN"), os.Getenv("BUILDKITE_ORG"))
 	builds := cli.BuildList()
 	if len(builds) == 0 {
@@ -59,21 +59,39 @@ func listBuilds() {
 		}
 
 		fmt.Printf("Build %s in %s(%s) by %s -> %s\n", number, pipeline, branch, author, state)
-		for _, job := range build.Jobs {
-			name := color.GreenString(*job.Name)
-			jState := ""
-			switch *job.State {
-			case "running":
-				jState = color.HiYellowString(*job.State)
-			case "scheduled":
-				jState = color.HiBlueString(*job.State)
-			case "passed":
-				jState = color.HiGreenString(*job.State)
-			default:
-				jState = color.RedString(*job.State)
+		if printJobs {
+			for _, job := range build.Jobs {
+				name := color.GreenString(*job.Name)
+				jState := ""
+				switch *job.State {
+				case "running":
+					jState = color.HiYellowString(*job.State)
+				case "scheduled":
+					jState = color.HiBlueString(*job.State)
+				case "passed":
+					jState = color.HiGreenString(*job.State)
+				default:
+					jState = color.RedString(*job.State)
+				}
+				if printFinishedJobs || *job.State == "scheduled" {
+					fmt.Printf("  Job: %s -> %s\n", name, jState)
+				}
 			}
-			fmt.Printf("  Job: %s -> %s\n", name, jState)
 		}
+	}
+}
+
+func commandListBuilds() {
+	if len(os.Args) < 3 {
+		listBuilds(true, true)
+		return
+	}
+	flag := os.Args[2]
+	switch flag {
+	case "--no-jobs":
+		listBuilds(false, false)
+	case "--only-pending":
+		listBuilds(true, false)
 	}
 }
 
@@ -93,7 +111,7 @@ func main() {
 	case "help":
 		printHelp()
 	case "builds":
-		listBuilds()
+		commandListBuilds()
 	case "cancel":
 		cancelBuild()
 	case "agents":
