@@ -42,7 +42,8 @@ func listBuilds(printJobs, printFinishedJobs bool) {
 		fmt.Print(color.HiGreenString("There aren't any pending builds\n"))
 		return
 	}
-	fmt.Printf("Listing %s builds\n", color.YellowString("%v", len(builds)))
+	agentsAvailable := cli.AvailableAgents()
+	fmt.Printf("Listing %s builds for %s agents\n", color.YellowString("%v", len(builds)), color.YellowString("%v", agentsAvailable))
 	for _, build := range builds {
 		author := color.CyanString(build.Creator.Name)
 		number := color.HiYellowString("#%v", *build.Number)
@@ -52,6 +53,9 @@ func listBuilds(printJobs, printFinishedJobs bool) {
 		switch *build.State {
 		case "running":
 			state = color.HiYellowString(*build.State)
+			if agentsAvailable == 0 {
+				state = color.HiRedString("-stalled- no agents available")
+			}
 		case "scheduled":
 			state = color.HiBlueString(*build.State)
 		default:
