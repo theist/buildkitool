@@ -45,6 +45,12 @@
 			"revisionTime": "2017-11-07T05:05:31Z"
 		},
 		{
+			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
+			"path": "github.com/mitchellh/go-homedir",
+			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
+			"revisionTime": "2016-12-03T19:45:07Z"
+		},
+		{
 			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
 			"path": "golang.org/x/net/context",
 			"revision": "61147c48b25b599e5b561d2e9c4f3e1ef489ca41",
