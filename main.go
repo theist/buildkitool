@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
+	"github.com/mitchellh/go-homedir"
 	. "github.com/theist/buildkitool/buildkite"
 )
 
@@ -33,6 +34,17 @@ func cancelBuild() {
 
 func listAgents() {
 	//TODO: list agetns status
+}
+
+func printConfig() {
+	userConfigFile, _ := homedir.Expand("~/.buildkitool")
+
+	fmt.Printf("# place and fill if needed these lines in a local file called .env\n")
+	fmt.Printf("# or in your home dir as %v\n", userConfigFile)
+	fmt.Printf("# or find a way to set it as environment variables\n")
+	fmt.Printf("# local .env takes precedence over home file, any of these will override already setted environment variables\n\n")
+	fmt.Printf("BUILDKITE_ORG=%v\n", os.Getenv("BUILDKITE_ORG"))
+	fmt.Printf("BUILDKITE_API_TOKEN=%v\n", os.Getenv("BUILDKITE_API_TOKEN"))
 }
 
 func listBuilds(printJobs, printFinishedJobs bool) {
@@ -100,10 +112,9 @@ func commandListBuilds() {
 }
 
 func main() {
-	err := godotenv.Load(".env")
-	if err == nil {
-		log.Println("env variables loaded from .env file")
-	}
+	godotenv.Load(".env")
+	userConfigFile, _ := homedir.Expand("~/.buildkitool")
+	godotenv.Load(userConfigFile)
 	if !checkEnv() {
 		os.Exit(1)
 	}
@@ -120,6 +131,8 @@ func main() {
 		cancelBuild()
 	case "agents":
 		listAgents()
+	case "config":
+		printConfig()
 	default:
 		fmt.Print(color.HiRedString("Unknow command: %v\n", command))
 		printHelp()
