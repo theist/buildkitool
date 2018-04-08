@@ -108,6 +108,9 @@ func commandListBuilds() {
 		listBuilds(false, false)
 	case "--only-pending":
 		listBuilds(true, false)
+	default:
+		fmt.Print(color.HiRedString("Unknow Flag: %v\n", flag))
+		printHelp()
 	}
 }
 
