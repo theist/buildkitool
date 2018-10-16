@@ -149,9 +149,6 @@ func commandListBuilds() {
 	}
 }
 
-func mainHelp() {
-}
-
 func main() {
 	godotenv.Load(".env")
 	userConfigFile, _ := homedir.Expand("~/.buildkitool")
