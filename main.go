@@ -169,7 +169,7 @@ func main() {
 	case "config":
 		printConfig()
 	default:
-		fmt.Print(color.HiRedString("Unknow command: %v\n", command))
+		fmt.Print(color.HiRedString("Unknown command: %v\n\n", command))
 		printHelp()
 	}
 }
