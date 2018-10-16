@@ -25,7 +25,18 @@ func checkEnv() bool {
 }
 
 func printHelp() {
-	//TODO: help!
+	fmt.Println(`buildkitool
+
+    Command line utility to check several aspects of the buildkite status.
+Currently it support the next subcommands:
+
+   * builds 		Check build status
+   * config			Print current config and help configuring.
+   * help			This help.
+
+To use this command line utility you will need an API token that you can obtain
+at https://buildkite.com/user/api-access-tokens. Once you have it write and
+modify the output of a "buildkitool config" command.`)
 }
 
 func cancelBuild() {
@@ -116,9 +127,7 @@ func printBuildsHelp() {
                     Will show only pending "scheduled" jobs
 
   --help, help
-                    This help.
-
-`)
+                    This help.`)
 }
 
 func commandListBuilds() {
@@ -138,6 +147,9 @@ func commandListBuilds() {
 		fmt.Print(color.HiRedString("Unknow Flag: %v\n", flag))
 		printBuildsHelp()
 	}
+}
+
+func mainHelp() {
 }
 
 func main() {
