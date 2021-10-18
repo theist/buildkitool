@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -147,15 +148,20 @@ func Exec(filenames []string, cmd string, cmdArgs []string) error {
 
 // Write serializes the given environment and writes it to a file
 func Write(envMap map[string]string, filename string) error {
-	content, error := Marshal(envMap)
-	if error != nil {
-		return error
+	content, err := Marshal(envMap)
+	if err != nil {
+		return err
 	}
-	file, error := os.Create(filename)
-	if error != nil {
-		return error
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
 	}
-	_, err := file.WriteString(content)
+	defer file.Close()
+	_, err = file.WriteString(content + "\n")
+	if err != nil {
+		return err
+	}
+	file.Sync()
 	return err
 }
 
@@ -164,7 +170,11 @@ func Write(envMap map[string]string, filename string) error {
 func Marshal(envMap map[string]string) (string, error) {
 	lines := make([]string, 0, len(envMap))
 	for k, v := range envMap {
-		lines = append(lines, fmt.Sprintf(`%s="%s"`, k, doubleQuoteEscape(v)))
+		if d, err := strconv.Atoi(v); err == nil {
+			lines = append(lines, fmt.Sprintf(`%s=%d`, k, d))
+		} else {
+			lines = append(lines, fmt.Sprintf(`%s="%s"`, k, doubleQuoteEscape(v)))
+		}
 	}
 	sort.Strings(lines)
 	return strings.Join(lines, "\n"), nil
@@ -208,6 +218,8 @@ func readFile(filename string) (envMap map[string]string, err error) {
 
 	return Parse(file)
 }
+
+var exportRegex = regexp.MustCompile(`^\s*(?:export\s+)?(.*?)\s*$`)
 
 func parseLine(line string, envMap map[string]string) (key string, value string, err error) {
 	if len(line) == 0 {
@@ -256,12 +268,21 @@ func parseLine(line string, envMap map[string]string) (key string, value string,
 	if strings.HasPrefix(key, "export") {
 		key = strings.TrimPrefix(key, "export")
 	}
-	key = strings.Trim(key, " ")
+	key = strings.TrimSpace(key)
+
+	key = exportRegex.ReplaceAllString(splitString[0], "$1")
 
 	// Parse the value
 	value = parseValue(splitString[1], envMap)
 	return
 }
+
+var (
+	singleQuotesRegex  = regexp.MustCompile(`\A'(.*)'\z`)
+	doubleQuotesRegex  = regexp.MustCompile(`\A"(.*)"\z`)
+	escapeRegex        = regexp.MustCompile(`\\.`)
+	unescapeCharsRegex = regexp.MustCompile(`\\([^$])`)
+)
 
 func parseValue(value string, envMap map[string]string) string {
 
@@ -270,13 +291,17 @@ func parseValue(value string, envMap map[string]string) string {
 
 	// check if we've got quoted values or possible escapes
 	if len(value) > 1 {
-		first := string(value[0:1])
-		last := string(value[len(value)-1:])
-		if first == last && strings.ContainsAny(first, `"'`) {
+		singleQuotes := singleQuotesRegex.FindStringSubmatch(value)
+
+		doubleQuotes := doubleQuotesRegex.FindStringSubmatch(value)
+
+		if singleQuotes != nil || doubleQuotes != nil {
 			// pull the quotes off the edges
 			value = value[1 : len(value)-1]
-			// handle escapes
-			escapeRegex := regexp.MustCompile(`\\.`)
+		}
+
+		if doubleQuotes != nil {
+			// expand newlines
 			value = escapeRegex.ReplaceAllStringFunc(value, func(match string) string {
 				c := strings.TrimPrefix(match, `\`)
 				switch c {
@@ -285,27 +310,41 @@ func parseValue(value string, envMap map[string]string) string {
 				case "r":
 					return "\r"
 				default:
-					return c
+					return match
 				}
 			})
+			// unescape characters
+			value = unescapeCharsRegex.ReplaceAllString(value, "$1")
+		}
+
+		if singleQuotes == nil {
+			value = expandVariables(value, envMap)
 		}
 	}
 
-	// expand variables
-	value = os.Expand(value, func(key string) string {
-		if val, ok := envMap[key]; ok {
-			return val
-		}
-		if val, ok := os.LookupEnv(key); ok {
-			return val
-		}
-		return ""
-	})
 	return value
 }
 
+var expandVarRegex = regexp.MustCompile(`(\\)?(\$)(\()?\{?([A-Z0-9_]+)?\}?`)
+
+func expandVariables(v string, m map[string]string) string {
+	return expandVarRegex.ReplaceAllStringFunc(v, func(s string) string {
+		submatch := expandVarRegex.FindStringSubmatch(s)
+
+		if submatch == nil {
+			return s
+		}
+		if submatch[1] == "\\" || submatch[2] == "(" {
+			return submatch[0][1:]
+		} else if submatch[4] != "" {
+			return m[submatch[4]]
+		}
+		return s
+	})
+}
+
 func isIgnoredLine(line string) bool {
-	trimmedLine := strings.Trim(line, " \n\t")
+	trimmedLine := strings.TrimSpace(line)
 	return len(trimmedLine) == 0 || strings.HasPrefix(trimmedLine, "#")
 }
 
