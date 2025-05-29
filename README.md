@@ -1,5 +1,3 @@
-Certainly! Here’s a succinct and practical README template for your Buildkite command line tool repository. You can customize details as needed:
-
 ---
 
 # buildkitool
@@ -61,7 +59,3 @@ Contributions, issues, and feature requests are welcome! Please open an issue or
 ## License
 
 MIT License
-
----
-
-Let me know if you want to include example output, screenshots, or more advanced sections!
